@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Code Generator — Simulation</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+:root{--bg:#0f172a;--card:#1e293b;--border:#1f2937;--accent:#38bdf8;--accent2:#22d3ee;--text:#e5e7eb;--muted:#94a3b8;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:Inter,system-ui,sans-serif;background:radial-gradient(circle at 15% 15%,rgba(34,211,238,.08),transparent 30%),radial-gradient(circle at 85% 5%,rgba(56,189,248,.07),transparent 30%),var(--bg);color:var(--text);min-height:100vh;padding:28px 16px 40px;}
+.page{max-width:1340px;margin:0 auto;}
+header{text-align:center;margin-bottom:22px;}
+.pill{display:inline-flex;align-items:center;gap:8px;padding:7px 16px;border-radius:999px;background:linear-gradient(90deg,rgba(34,211,238,.14),rgba(56,189,248,.1));color:var(--accent);font-weight:700;font-size:13px;border:1px solid rgba(56,189,248,.22);}
+h1{font-size:28px;letter-spacing:-.4px;margin:10px 0 6px;}
+.sub{color:var(--muted);font-size:14px;}
+.grid{display:grid;grid-template-columns:1fr;gap:18px;}
+@media(min-width:920px){.grid{grid-template-columns:1.1fr .9fr;}}
+.card{background:linear-gradient(160deg,rgba(255,255,255,.025),rgba(255,255,255,0)),var(--card);border:1px solid var(--border);border-radius:18px;box-shadow:0 12px 40px rgba(0,0,0,.4);padding:20px;}
+.card-title{font-size:13px;font-weight:700;color:var(--accent);letter-spacing:.8px;text-transform:uppercase;margin-bottom:12px;}
+textarea{width:100%;min-height:280px;padding:14px;border-radius:12px;border:1px solid var(--border);background:#080f1e;color:#e2e8f0;font-family:"JetBrains Mono","Fira Code",monospace;font-size:13px;resize:vertical;outline:none;tab-size:4;}
+textarea:focus{box-shadow:0 0 0 3px rgba(56,189,248,.12);border-color:rgba(56,189,248,.7);}
+.controls{display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap;}
+.btn{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#071524;border:none;border-radius:10px;padding:10px 18px;font-weight:700;cursor:pointer;box-shadow:0 8px 20px rgba(56,189,248,.25);font-size:13px;transition:.15s;}
+.btn:hover{filter:brightness(1.1);}
+.btn-sec{background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.3);color:var(--accent);border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:600;font-size:13px;}
+.btn-clear{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:10px;padding:10px 14px;cursor:pointer;font-size:13px;}
+.status{color:var(--muted);font-size:13px;}
+.tabs{display:flex;gap:0;margin-bottom:14px;flex-wrap:wrap;}
+.tab{padding:8px 14px;font-size:12.5px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);transition:.15s;}
+.tab:first-child{border-radius:10px 0 0 10px;}
+.tab:last-child{border-radius:0 10px 10px 0;}
+.tab.active{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#071524;border-color:var(--accent);font-weight:700;}
+.sbadges{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+.badge{padding:5px 10px;border-radius:999px;font-weight:700;font-size:12px;}
+.badge.KEYWORD{color:#fbbf24;background:rgba(251,191,36,.08);}.badge.IDENTIFIER{color:#38bdf8;background:rgba(56,189,248,.08);}
+.badge.INTEGER,.badge.FLOAT{color:#6ee7b7;background:rgba(167,243,208,.06);}.badge.STRING{color:#fb923c;background:rgba(251,146,0,.06);}
+.badge.OPERATOR{color:#a5b4fc;background:rgba(199,210,254,.06);}.badge.DELIMITER{color:#f472b6;background:rgba(244,114,182,.06);}
+.badge.COMMENT{color:#94a3b8;background:rgba(148,163,184,.06);}.badge.PREPROCESSOR{color:#c084fc;background:rgba(192,132,252,.06);}
+.badge.UNKNOWN{color:#f87171;background:rgba(239,68,68,.06);}
+.table-wrap{max-height:500px;overflow:auto;border-radius:10px;border:1px solid var(--border);}
+table{width:100%;border-collapse:collapse;}
+thead{position:sticky;top:0;background:#071427;z-index:1;}
+th,td{padding:9px 12px;font-size:13px;text-align:left;border-bottom:1px solid var(--border);}
+th{color:var(--muted);text-transform:uppercase;font-weight:700;letter-spacing:.6px;}
+td.val{font-family:"JetBrains Mono",monospace;color:#cbd5e1;}
+.empty{text-align:center;color:var(--muted);padding:40px 12px;font-size:14px;}
+.asm-wrap{max-height:560px;overflow:auto;border-radius:10px;border:1px solid var(--border);background:#080f1e;padding:0;}
+.asm-line{display:flex;font-family:"JetBrains Mono",monospace;font-size:12.5px;line-height:1.75;border-bottom:1px solid rgba(31,41,55,.4);}
+.asm-num{min-width:44px;text-align:right;padding:2px 10px 2px 6px;color:#475569;background:rgba(0,0,0,.15);user-select:none;}
+.asm-code{padding:2px 12px;white-space:pre;}
+.ast-wrap{max-height:500px;overflow:auto;border-radius:10px;border:1px solid var(--border);background:#080f1e;padding:16px;font-family:"JetBrains Mono",monospace;font-size:12px;}
+.ast-node{line-height:1.7;white-space:nowrap;}.ast-connector{color:#475569;}.ast-type{color:#38bdf8;font-weight:700;}.ast-value{color:#fbbf24;}.ast-loc{color:#475569;font-size:11px;}
+.ast-toggle{cursor:pointer;user-select:none;}.ast-toggle:hover .ast-type{text-decoration:underline;}
+.tac-wrap{max-height:540px;overflow:auto;border-radius:10px;border:1px solid var(--border);background:#080f1e;padding:0;}
+.tac-line{display:flex;font-family:"JetBrains Mono",monospace;font-size:12.5px;line-height:1.75;border-bottom:1px solid rgba(31,41,55,.4);}
+.tac-num{min-width:44px;text-align:right;padding:2px 10px 2px 6px;color:#475569;background:rgba(0,0,0,.15);user-select:none;}
+.tac-code{padding:2px 12px;white-space:pre;}
+.parse-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:14px;}
+.stat-card{background:rgba(56,189,248,.04);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center;}
+.stat-value{font-size:24px;font-weight:800;color:var(--accent);}
+.stat-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-top:4px;}
+.hidden{display:none !important;}
+.reg-map{margin-top:10px;}
+footer{margin-top:18px;padding-top:12px;border-top:1px solid var(--border);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;color:var(--muted);font-size:13px;}
+</style>
+</head>
+<body>
+<div class="page">
+<header>
+  <div class="pill">🖥️ Code Generator</div>
+  <h1>Target Code Generation — Simulation</h1>
+  <p class="sub">Browser-only lexer → parser → TAC → target assembly (x86-like). Paste C or Python code, then click <strong>Generate</strong>.</p>
+</header>
+<div class="grid">
+  <div class="card">
+    <div class="card-title">Source Code</div>
+    <textarea id="code" spellcheck="false">#include <stdio.h>
+
+int main() {
+    int x = 10;
+    float pi = 3.14;
+    int y = x + 5 * 2;
+
+    if (x >= 5 && pi != 0) {
+        printf("hello");
+        x++;
+    } else {
+        y = x - 1;
+    }
+
+    for (int i = 0; i < 10; i++) {
+        y = y + i;
+    }
+
+    while (x > 0) {
+        x--;
+    }
+
+    return 0;
+}</textarea>
+    <div class="controls">
+      <button class="btn" id="run">🖥️ Generate</button>
+      <button class="btn-sec" id="demo-c">Demo C</button>
+      <button class="btn-sec" id="demo-py">Demo Python</button>
+      <button class="btn-clear" id="clear">Clear</button>
+      <span class="status" id="status">Ready</span>
+    </div>
+  </div>
+  <div class="card">
+    <div class="tabs">
+      <button class="tab" data-tab="tokens">Tokens</button>
+      <button class="tab" data-tab="ast">AST</button>
+      <button class="tab" data-tab="tac">TAC</button>
+      <button class="tab active" data-tab="asm">Assembly</button>
+      <button class="tab" data-tab="summary">Summary</button>
+    </div>
+    <div id="panel-tokens" class="hidden">
+      <div class="sbadges" id="token-summary"></div>
+      <div class="table-wrap"><table><thead><tr><th>#</th><th>Type</th><th>Value</th><th>Ln</th><th>Col</th></tr></thead>
+      <tbody id="token-tbody"><tr><td colspan="5" class="empty">Click <strong>Generate</strong> to begin.</td></tr></tbody></table></div>
+    </div>
+    <div id="panel-ast" class="hidden">
+      <div class="ast-wrap" id="ast-container"><div class="empty">Click <strong>Generate</strong> to build the AST.</div></div>
+    </div>
+    <div id="panel-tac" class="hidden">
+      <div class="tac-wrap" id="tac-container"><div class="empty" style="padding:40px">Click <strong>Generate</strong> to produce TAC.</div></div>
+    </div>
+    <div id="panel-asm">
+      <div class="asm-wrap" id="asm-container"><div class="empty" style="padding:40px">Click <strong>Generate</strong> to produce target assembly.</div></div>
+    </div>
+    <div id="panel-summary" class="hidden">
+      <div class="parse-summary" id="summary-stats"></div>
+      <div class="card-title" style="margin-top:10px">Register Allocation Map</div>
+      <div class="table-wrap"><table><thead><tr><th>Variable / Temp</th><th>Register</th></tr></thead>
+      <tbody id="reg-tbody"><tr><td colspan="2" class="empty">No data yet.</td></tr></tbody></table></div>
+      <div class="card-title" style="margin-top:14px">Instruction Breakdown</div>
+      <div class="table-wrap"><table><thead><tr><th>Instruction</th><th>Count</th></tr></thead>
+      <tbody id="instr-tbody"><tr><td colspan="2" class="empty">No data yet.</td></tr></tbody></table></div>
+    </div>
+  </div>
+</div>
+<footer>
+  <div>Name: <strong>Haarish Kumar S</strong></div>
+  <div>Registration Number: <strong>RA2311003050211</strong></div>
+</footer>
+</div>
+
+<script>
+/* ═══════════════════════════════════════
+   LEXER
+   ═══════════════════════════════════════ */
+const KW=new Set(["auto","break","case","char","const","continue","default","do","double","else","enum","extern","float","for","goto","if","int","long","register","return","short","signed","sizeof","static","struct","switch","typedef","union","unsigned","void","volatile","while","print","input","def","class","import","from","as","try","except","finally","raise","with","yield","lambda","pass","True","False","None","and","or","not","in","is","elif"]);
+const MO=new Set(["==","!=","<=",">=","&&","||","++","--","+=","-=","*=","/=","<<",">>","->","**","//"]);
+const SO=new Set([..."+-*/%=<>!&|^~?:@"]),DL=new Set([..."(){}[];,."]);
+function tokenize(src){const T=[];let p=0,ln=1,co=1;const c=()=>p<src.length?src[p]:null,pk=()=>p+1<src.length?src[p+1]:null,a=()=>{if(src[p]==='\n'){ln++;co=1}else co++;p++},ad=(t,v,l,cl)=>T.push({type:t,value:v,line:l,column:cl});while(p<src.length){while(c()&&' \t\r'.includes(c()))a();const ch=c();if(!ch)break;if(ch==='\n'){ad('NEWLINE','\\n',ln,co);a();continue}if(ch==='#'){const sl=ln,sc=co;let d='';while(c()&&c()!=='\n'){d+=c();a()}ad('PREPROCESSOR',d,sl,sc);continue}if(ch==='/'&&pk()==='/'){const sl=ln,sc=co;let cm='';while(c()&&c()!=='\n'){cm+=c();a()}ad('COMMENT',cm,sl,sc);continue}if(ch==='/'&&pk()==='*'){const sl=ln,sc=co;let cm='/*';a();a();while(c()){if(c()==='*'&&pk()==='/'){cm+='*/';a();a();break}cm+=c();a()}ad('COMMENT',cm,sl,sc);continue}if(ch>='0'&&ch<='9'){const sl=ln,sc=co;let n='',f=false;while(c()&&(/\d/.test(c())||c()==='.')){if(c()==='.'){if(f)break;f=true}n+=c();a()}ad(f?'FLOAT':'INTEGER',n,sl,sc);continue}if(/[a-zA-Z_]/.test(ch)){const sl=ln,sc=co;let w='';while(c()&&/[a-zA-Z0-9_]/.test(c())){w+=c();a()}ad(KW.has(w)?'KEYWORD':'IDENTIFIER',w,sl,sc);continue}if(ch==='"'||ch==="'"){const sl=ln,sc=co,q=ch;let s=q;a();while(c()&&c()!==q){if(c()==='\\'){s+=c();a()}if(c()){s+=c();a()}}if(c()===q){s+=c();a()}ad('STRING',s,sl,sc);continue}if(pk()&&MO.has(ch+pk())){ad('OPERATOR',ch+pk(),ln,co);a();a();continue}if(SO.has(ch)){ad('OPERATOR',ch,ln,co);a();continue}if(DL.has(ch)){ad('DELIMITER',ch,ln,co);a();continue}ad('UNKNOWN',ch,ln,co);a();}return T;}
+
+/* ═══════════════════════════════════════
+   AST NODE
+   ═══════════════════════════════════════ */
+class N{constructor(t,v=null,l=0,c=0){this.type=t;this.value=v;this.line=l;this.column=c;this.children=[];}add(ch){if(ch)this.children.push(ch);return this;}count(){let c=1;for(const x of this.children)c+=x.count();return c;}countByType(m={}){m[this.type]=(m[this.type]||0)+1;for(const x of this.children)x.countByType(m);return m;}}
+
+/* ═══════════════════════════════════════
+   PARSER (full recursive descent)
+   ═══════════════════════════════════════ */
+class Parser{
+constructor(tk){this.tk=tk.filter(t=>t.type!=='NEWLINE'&&t.type!=='COMMENT');this.p=0;this.errors=[];this.ast=new N('PROGRAM');}
+c(){return this.p<this.tk.length?this.tk[this.p]:null;}adv(){const t=this.c();this.p++;return t;}
+err(m,t){t=t||this.c();this.errors.push(t?{message:m,line:t.line,column:t.column,value:t.value}:{message:m,line:0,column:0,value:'EOF'});}
+expect(ty,v){const t=this.c();if(!t){this.err(`Expected ${ty}${v?" '"+v+"'":''},got EOF`);return null;}if(t.type!==ty||(v!==undefined&&t.value!==v)){this.err(`Expected ${ty}${v?" '"+v+"'":''},got '${t.value}'`,t);return null;}return this.adv();}
+match(ty,v){const t=this.c();if(!t||t.type!==ty)return false;return v===undefined||t.value===v;}
+mkw(ks){const t=this.c();return t&&t.type==='KEYWORD'&&ks.includes(t.value);}
+parse(){while(this.c()){if(this.match('PREPROCESSOR')){const t=this.c();this.ast.add(new N('PREPROCESSOR',t.value,t.line,t.column));this.adv();continue;}const s=this.pS();if(s)this.ast.add(s);else{if(this.c()){this.err(`Unexpected '${this.c().value}'`);this.adv();}}}return this.ast;}
+pS(){const t=this.c();if(!t)return null;const cT=["int","float","double","char","void","long","short","signed","unsigned","auto","static","extern","register","const","volatile"];if(t.type==='KEYWORD'&&cT.includes(t.value))return this.pDecl();if(this.match('KEYWORD','struct'))return this.pStruct();if(this.match('KEYWORD','enum'))return this.pEnum();if(this.match('KEYWORD','typedef'))return this.pTypedef();if(this.match('KEYWORD','return'))return this.pRet();if(this.match('KEYWORD','if'))return this.pIf();if(this.match('KEYWORD','while'))return this.pWh();if(this.match('KEYWORD','do'))return this.pDoWh();if(this.match('KEYWORD','for'))return this.pFor();if(this.match('KEYWORD','switch'))return this.pSw();if(this.match('KEYWORD','break')){const t=this.adv(),n=new N('BREAK',null,t.line,t.column);if(this.match('DELIMITER',';'))this.adv();return n;}if(this.match('KEYWORD','continue')){const t=this.adv(),n=new N('CONTINUE',null,t.line,t.column);if(this.match('DELIMITER',';'))this.adv();return n;}if(this.match('KEYWORD','goto')){const t=this.adv(),n=new N('GOTO',null,t.line,t.column);if(this.match('IDENTIFIER')){const l=this.adv();n.add(new N('LABEL',l.value));}this.expect('DELIMITER',';');return n;}if(this.match('KEYWORD','def'))return this.pPyDef();if(this.match('KEYWORD','class'))return this.pPyCls();if(this.match('KEYWORD','import')||this.match('KEYWORD','from'))return this.pPyImp();if(this.match('KEYWORD','elif'))return this.pElif();if(this.match('KEYWORD','try')){const t=this.adv(),n=new N('TRY',null,t.line,t.column);if(this.match('OPERATOR',':'))this.adv();return n;}if(this.match('KEYWORD','except'))return this.pPyExc();if(this.match('KEYWORD','finally')){const t=this.adv(),n=new N('FINALLY',null,t.line,t.column);if(this.match('OPERATOR',':'))this.adv();return n;}if(this.match('KEYWORD','with'))return this.pPyWith();if(this.match('KEYWORD','raise')){const t=this.adv(),n=new N('RAISE',null,t.line,t.column);if(this.c()&&!this.match('DELIMITER',';')&&!this.match('OPERATOR',':')){const e=this.pE();if(e)n.add(e);}return n;}if(this.match('KEYWORD','pass'))return new N('PASS',null,this.adv().line,0);if(this.match('KEYWORD','yield')){const t=this.adv(),n=new N('YIELD',null,t.line,t.column);if(this.c()&&!this.match('DELIMITER',';')){const e=this.pE();if(e)n.add(e);}return n;}if(this.match('KEYWORD','print'))return this.pES();if(this.match('DELIMITER','{'))return this.pBl();if(['IDENTIFIER','INTEGER','FLOAT','STRING','DELIMITER','OPERATOR','KEYWORD'].includes(t.type))return this.pES();return null;}
+pDecl(){const st=this.c(),nL=st.line,nC=st.column;let ts='';const cT=["int","float","double","char","void","long","short","signed","unsigned","auto","static","extern","register","const","volatile"];while(this.c()&&this.c().type==='KEYWORD'&&cT.includes(this.c().value)){ts+=(ts?' ':'')+this.c().value;this.adv();}while(this.match('OPERATOR','*')){ts+='*';this.adv();}if(!this.match('IDENTIFIER')){this.err(`Expected id after '${ts}'`);return new N('ERROR',ts,nL,nC);}const nm=this.adv();if(this.match('DELIMITER','('))return this.pFD(ts,nm,nL,nC);const nd=new N('VAR_DECL',ts,nL,nC),vn=new N('VARIABLE',nm.value,nm.line,nm.column);if(this.match('DELIMITER','[')){this.adv();if(this.c()&&(this.c().type==='INTEGER'||this.c().type==='IDENTIFIER')){vn.add(new N('ARRAY_SIZE',this.c().value));this.adv();}this.expect('DELIMITER',']');}if(this.match('OPERATOR','=')){this.adv();const e=this.pE();if(e){const i=new N('INITIALIZER');i.add(e);vn.add(i);}}nd.add(vn);while(this.match('DELIMITER',',')){this.adv();if(this.match('OPERATOR','*'))this.adv();if(this.match('IDENTIFIER')){const nv=this.adv(),nn=new N('VARIABLE',nv.value,nv.line,nv.column);if(this.match('OPERATOR','=')){this.adv();const e=this.pE();if(e){const i=new N('INITIALIZER');i.add(e);nn.add(i);}}nd.add(nn);}}this.expect('DELIMITER',';');return nd;}
+pFD(rt,nm,l,co){const n=new N('FUNC_DEF',nm.value,l,co);n.add(new N('RETURN_TYPE',rt,l,co));const pn=new N('PARAMETERS');this.expect('DELIMITER','(');if(!this.match('DELIMITER',')')){const cT=["int","float","double","char","void","long","short","signed","unsigned","const"];while(true){const p=new N('PARAM');let ts='';while(this.c()&&this.c().type==='KEYWORD'&&cT.includes(this.c().value)){ts+=(ts?' ':'')+this.c().value;this.adv();}while(this.match('OPERATOR','*')){ts+='*';this.adv();}if(ts)p.add(new N('TYPE',ts));if(this.match('IDENTIFIER')){const nm2=this.adv();p.add(new N('NAME',nm2.value,nm2.line,nm2.column));}pn.add(p);if(this.match('DELIMITER',','))this.adv();else break;}}this.expect('DELIMITER',')');n.add(pn);if(this.match('DELIMITER','{'))n.add(this.pBl());else this.expect('DELIMITER',';');return n;}
+pBl(){const t=this.c(),n=new N('BLOCK',null,t?t.line:0,t?t.column:0);this.expect('DELIMITER','{');while(this.c()&&!this.match('DELIMITER','}')){const s=this.pS();if(s)n.add(s);else{if(this.c()&&!this.match('DELIMITER','}')){this.err('Unexpected in block');this.adv();}}}this.expect('DELIMITER','}');return n;}
+pRet(){const t=this.adv(),n=new N('RETURN',null,t.line,t.column);if(!this.match('DELIMITER',';')){const e=this.pE();if(e)n.add(e);}this.expect('DELIMITER',';');return n;}
+pIf(){const t=this.adv(),n=new N('IF',null,t.line,t.column);if(this.match('DELIMITER','(')){this.adv();const c2=this.pE(),cn=new N('CONDITION');if(c2)cn.add(c2);n.add(cn);this.expect('DELIMITER',')');}else{const c2=this.pE(),cn=new N('CONDITION');if(c2)cn.add(c2);n.add(cn);if(this.match('OPERATOR',':'))this.adv();}if(this.match('DELIMITER','{'))n.add(this.pBl());else{const s=this.pS();if(s){const b=new N('BODY');b.add(s);n.add(b);}}if(this.match('KEYWORD','else')){this.adv();if(this.match('KEYWORD','if')){const en=new N('ELSE_IF');en.add(this.pIf());n.add(en);}else if(this.match('DELIMITER','{')){const en=new N('ELSE');en.add(this.pBl());n.add(en);}else{if(this.match('OPERATOR',':'))this.adv();const en=new N('ELSE'),s=this.pS();if(s)en.add(s);n.add(en);}}return n;}
+pElif(){const t=this.adv(),n=new N('ELIF',null,t.line,t.column),c2=this.pE(),cn=new N('CONDITION');if(c2)cn.add(c2);n.add(cn);if(this.match('OPERATOR',':'))this.adv();const s=this.pS();if(s){const b=new N('BODY');b.add(s);n.add(b);}return n;}
+pWh(){const t=this.adv(),n=new N('WHILE',null,t.line,t.column);if(this.match('DELIMITER','(')){this.adv();const c2=this.pE(),cn=new N('CONDITION');if(c2)cn.add(c2);n.add(cn);this.expect('DELIMITER',')');}else{const c2=this.pE(),cn=new N('CONDITION');if(c2)cn.add(c2);n.add(cn);if(this.match('OPERATOR',':'))this.adv();}if(this.match('DELIMITER','{'))n.add(this.pBl());else{const s=this.pS();if(s){const b=new N('BODY');b.add(s);n.add(b);}}return n;}
+pDoWh(){const t=this.adv(),n=new N('DO_WHILE',null,t.line,t.column);if(this.match('DELIMITER','{'))n.add(this.pBl());this.expect('KEYWORD','while');if(this.match('DELIMITER','(')){this.adv();const c2=this.pE(),cn=new N('CONDITION');if(c2)cn.add(c2);n.add(cn);this.expect('DELIMITER',')');}this.expect('DELIMITER',';');return n;}
+pFor(){const t=this.adv(),n=new N('FOR',null,t.line,t.column);if(this.match('DELIMITER','(')){this.adv();const init=new N('INIT');if(!this.match('DELIMITER',';')){const e=this.pED();if(e)init.add(e);}n.add(init);if(this.match('DELIMITER',';'))this.adv();const cond=new N('CONDITION');if(!this.match('DELIMITER',';')){const c2=this.pE();if(c2)cond.add(c2);}n.add(cond);if(this.match('DELIMITER',';'))this.adv();const upd=new N('UPDATE');if(!this.match('DELIMITER',')')){const u=this.pE();if(u)upd.add(u);}n.add(upd);this.expect('DELIMITER',')');if(this.match('DELIMITER','{'))n.add(this.pBl());else{const s=this.pS();if(s){const b=new N('BODY');b.add(s);n.add(b);}}}else{if(this.match('IDENTIFIER')){const vt=this.adv();n.add(new N('ITERATOR',vt.value,vt.line,vt.column));}this.expect('KEYWORD','in');const it=this.pE();if(it){const itn=new N('ITERABLE');itn.add(it);n.add(itn);}if(this.match('OPERATOR',':'))this.adv();const s=this.pS();if(s){const b=new N('BODY');b.add(s);n.add(b);}}return n;}
+pSw(){const t=this.adv(),n=new N('SWITCH',null,t.line,t.column);this.expect('DELIMITER','(');const e=this.pE(),en=new N('SWITCH_EXPR');if(e)en.add(e);n.add(en);this.expect('DELIMITER',')');this.expect('DELIMITER','{');while(this.c()&&!this.match('DELIMITER','}')){if(this.match('KEYWORD','case')){const ct=this.adv(),cn=new N('CASE',null,ct.line,ct.column),ce=this.pE();if(ce)cn.add(ce);this.expect('OPERATOR',':');while(this.c()&&!this.match('KEYWORD','case')&&!this.match('KEYWORD','default')&&!this.match('DELIMITER','}')){const s=this.pS();if(s)cn.add(s);else break;}n.add(cn);}else if(this.match('KEYWORD','default')){const dt=this.adv(),dn=new N('DEFAULT',null,dt.line,dt.column);this.expect('OPERATOR',':');while(this.c()&&!this.match('DELIMITER','}')){const s=this.pS();if(s)dn.add(s);else break;}n.add(dn);}else{this.err("Expected case/default");this.adv();}}this.expect('DELIMITER','}');return n;}
+pStruct(){const t=this.adv(),n=new N('STRUCT',null,t.line,t.column);if(this.match('IDENTIFIER'))n.value=this.adv().value;if(this.match('DELIMITER','{'))n.add(this.pBl());if(this.match('DELIMITER',';'))this.adv();return n;}
+pEnum(){const t=this.adv(),n=new N('ENUM',null,t.line,t.column);if(this.match('IDENTIFIER'))n.value=this.adv().value;if(this.match('DELIMITER','{')){this.adv();while(this.c()&&!this.match('DELIMITER','}')){if(this.match('IDENTIFIER')){const ev=this.adv(),m=new N('MEMBER',ev.value);if(this.match('OPERATOR','=')){this.adv();const e=this.pE();if(e)m.add(e);}n.add(m);}if(this.match('DELIMITER',','))this.adv();else break;}this.expect('DELIMITER','}');}if(this.match('DELIMITER',';'))this.adv();return n;}
+pTypedef(){const t=this.adv(),n=new N('TYPEDEF',null,t.line,t.column),parts=[];while(this.c()&&!this.match('DELIMITER',';')){parts.push(this.c().value);this.adv();}if(parts.length)n.value=parts.join(' ');this.expect('DELIMITER',';');return n;}
+pPyDef(){const t=this.adv(),n=new N('FUNC_DEF',null,t.line,t.column);if(this.match('IDENTIFIER'))n.value=this.adv().value;const pn=new N('PARAMETERS');if(this.match('DELIMITER','(')){this.adv();while(!this.match('DELIMITER',')')&&this.c()){if(this.match('OPERATOR','*'))this.adv();if(this.match('IDENTIFIER')){const pt=this.adv(),p=new N('PARAM',pt.value,pt.line,pt.column);if(this.match('OPERATOR','=')){this.adv();const d=this.pE();if(d){const dn=new N('DEFAULT');dn.add(d);p.add(dn);}}pn.add(p);}if(this.match('DELIMITER',','))this.adv();else break;}this.expect('DELIMITER',')');}n.add(pn);if(this.match('OPERATOR',':'))this.adv();return n;}
+pPyCls(){const t=this.adv(),n=new N('CLASS_DEF',null,t.line,t.column);if(this.match('IDENTIFIER'))n.value=this.adv().value;if(this.match('DELIMITER','(')){this.adv();const bases=new N('BASES');while(!this.match('DELIMITER',')')&&this.c()){if(this.match('IDENTIFIER'))bases.add(new N('BASE',this.adv().value));if(this.match('DELIMITER',','))this.adv();else break;}this.expect('DELIMITER',')');n.add(bases);}if(this.match('OPERATOR',':'))this.adv();return n;}
+pPyImp(){const t=this.adv(),n=new N('IMPORT',null,t.line,t.column);if(t.value==='from'){if(this.match('IDENTIFIER'))n.add(new N('MODULE',this.adv().value));this.expect('KEYWORD','import');while(this.match('IDENTIFIER')){const imp=this.adv(),in_=new N('NAME',imp.value);if(this.match('KEYWORD','as')){this.adv();if(this.match('IDENTIFIER'))in_.add(new N('ALIAS',this.adv().value));}n.add(in_);if(this.match('DELIMITER',','))this.adv();else break;}}else{while(this.match('IDENTIFIER')){const m=this.adv(),mn=new N('MODULE',m.value);while(this.match('DELIMITER','.')){this.adv();if(this.match('IDENTIFIER'))mn.value+='.'+this.adv().value;}if(this.match('KEYWORD','as')){this.adv();if(this.match('IDENTIFIER'))mn.add(new N('ALIAS',this.adv().value));}n.add(mn);if(this.match('DELIMITER',','))this.adv();else break;}}return n;}
+pPyExc(){const t=this.adv(),n=new N('EXCEPT',null,t.line,t.column);if(this.c()&&!this.match('OPERATOR',':')){const e=this.pE();if(e)n.add(e);if(this.match('KEYWORD','as')){this.adv();if(this.match('IDENTIFIER'))n.add(new N('ALIAS',this.adv().value));}}if(this.match('OPERATOR',':'))this.adv();return n;}
+pPyWith(){const t=this.adv(),n=new N('WITH',null,t.line,t.column);const e=this.pE();if(e)n.add(e);if(this.match('KEYWORD','as')){this.adv();if(this.match('IDENTIFIER'))n.add(new N('ALIAS',this.adv().value));}if(this.match('OPERATOR',':'))this.adv();return n;}
+pES(){const e=this.pE();if(!e)return null;const n=new N('EXPR_STMT',null,e.line,e.column);n.add(e);if(this.match('DELIMITER',';'))this.adv();return n;}
+pED(){const cT=["int","float","double","char","long","short","signed","unsigned"];if(this.c()&&this.c().type==='KEYWORD'&&cT.includes(this.c().value)){const tt=this.adv(),n=new N('VAR_DECL',tt.value,tt.line,tt.column);if(this.match('IDENTIFIER')){const nm2=this.adv(),vn=new N('VARIABLE',nm2.value,nm2.line,nm2.column);if(this.match('OPERATOR','=')){this.adv();const e=this.pE();if(e){const i=new N('INITIALIZER');i.add(e);vn.add(i);}}n.add(vn);}return n;}return this.pE();}
+pE(){let l=this.pTern();if(!l)return null;const aO=['=','+=','-=','*=','/='];if(this.c()&&this.c().type==='OPERATOR'&&aO.includes(this.c().value)){const op=this.adv(),r=this.pE(),n=new N('ASSIGN',op.value,op.line,op.column);n.add(l);if(r)n.add(r);return n;}return l;}
+pTern(){let l=this.pLOr();if(l&&this.match('OPERATOR','?')){this.adv();const t2=this.pE();this.expect('OPERATOR',':');const f=this.pE();const n=new N('TERNARY','?:',l.line,l.column);n.add(l);if(t2)n.add(t2);if(f)n.add(f);return n;}return l;}
+pLOr(){let l=this.pLAnd();while(this.c()&&['OPERATOR','KEYWORD'].includes(this.c().type)&&['||','or'].includes(this.c().value)){const op=this.adv(),r=this.pLAnd(),n=new N('LOG_OR',op.value,op.line,op.column);n.add(l);if(r)n.add(r);l=n;}return l;}
+pLAnd(){let l=this.pEq();while(this.c()&&['OPERATOR','KEYWORD'].includes(this.c().type)&&['&&','and'].includes(this.c().value)){const op=this.adv(),r=this.pEq(),n=new N('LOG_AND',op.value,op.line,op.column);n.add(l);if(r)n.add(r);l=n;}return l;}
+pEq(){let l=this.pRel();while(this.c()&&this.c().type==='OPERATOR'&&['==','!='].includes(this.c().value)){const op=this.adv(),r=this.pRel(),n=new N('EQUALITY',op.value,op.line,op.column);n.add(l);if(r)n.add(r);l=n;}return l;}
+pRel(){let l=this.pAdd();while(this.c()&&this.c().type==='OPERATOR'&&['<','>','<=','>='].includes(this.c().value)){const op=this.adv(),r=this.pAdd(),n=new N('RELATIONAL',op.value,op.line,op.column);n.add(l);if(r)n.add(r);l=n;}if(this.mkw(['in','is','not'])){let ov=this.adv().value;if(ov==='not'&&this.match('KEYWORD','in')){ov='not in';this.adv();}else if(ov==='is'&&this.match('KEYWORD','not')){ov='is not';this.adv();}const r=this.pAdd(),n=new N('RELATIONAL',ov,l?l.line:0,l?l.column:0);n.add(l);if(r)n.add(r);l=n;}return l;}
+pAdd(){let l=this.pMul();while(this.c()&&this.c().type==='OPERATOR'&&['+','-'].includes(this.c().value)){const op=this.adv(),r=this.pMul(),n=new N('BIN_OP',op.value,op.line,op.column);n.add(l);if(r)n.add(r);l=n;}return l;}
+pMul(){let l=this.pUn();while(this.c()&&this.c().type==='OPERATOR'&&['*','/','%','//'].includes(this.c().value)){const op=this.adv(),r=this.pUn(),n=new N('BIN_OP',op.value,op.line,op.column);n.add(l);if(r)n.add(r);l=n;}return l;}
+pUn(){if(this.c()&&this.c().type==='OPERATOR'&&['+','-','!','~','*','&'].includes(this.c().value)){const op=this.adv(),o=this.pUn(),n=new N('UNARY',op.value,op.line,op.column);if(o)n.add(o);return n;}if(this.match('KEYWORD','not')){const op=this.adv(),o=this.pUn(),n=new N('UNARY','not',op.line,op.column);if(o)n.add(o);return n;}if(this.match('KEYWORD','sizeof')){const op=this.adv(),n=new N('SIZEOF',null,op.line,op.column);if(this.match('DELIMITER','(')){this.adv();const e=this.pE();if(e)n.add(e);this.expect('DELIMITER',')');}return n;}if(this.c()&&this.c().type==='OPERATOR'&&['++','--'].includes(this.c().value)){const op=this.adv(),o=this.pUn(),n=new N('PREFIX',op.value,op.line,op.column);if(o)n.add(o);return n;}return this.pPo();}
+pPo(){let l=this.pPr();if(!l)return null;while(this.c()){if(this.match('DELIMITER','(')){this.adv();const call=new N('CALL',null,l.line,l.column);call.add(l);const args=new N('ARGS');if(!this.match('DELIMITER',')')){let a2=this.pE();if(a2)args.add(a2);while(this.match('DELIMITER',',')){this.adv();a2=this.pE();if(a2)args.add(a2);}}call.add(args);this.expect('DELIMITER',')');l=call;continue;}if(this.match('DELIMITER','[')){this.adv();const acc=new N('INDEX',null,l.line,l.column);acc.add(l);const idx=this.pE();if(idx)acc.add(idx);this.expect('DELIMITER',']');l=acc;continue;}if(this.match('DELIMITER','.')){this.adv();const mem=new N('DOT',null,l.line,l.column);mem.add(l);if(this.match('IDENTIFIER'))mem.add(new N('MEMBER',this.adv().value));l=mem;continue;}if(this.match('OPERATOR','->')){this.adv();const arr=new N('ARROW',null,l.line,l.column);arr.add(l);if(this.match('IDENTIFIER'))arr.add(new N('MEMBER',this.adv().value));l=arr;continue;}if(this.c()&&this.c().type==='OPERATOR'&&['++','--'].includes(this.c().value)){const op=this.adv(),n=new N('POSTFIX',op.value,op.line,op.column);n.add(l);l=n;continue;}break;}return l;}
+pPr(){const t=this.c();if(!t)return null;if(t.type==='INTEGER'){this.adv();return new N('INT',t.value,t.line,t.column);}if(t.type==='FLOAT'){this.adv();return new N('FLOAT',t.value,t.line,t.column);}if(t.type==='STRING'){this.adv();return new N('STRING',t.value,t.line,t.column);}if(t.type==='KEYWORD'&&(t.value==='True'||t.value==='False')){this.adv();return new N('BOOL',t.value,t.line,t.column);}if(t.type==='KEYWORD'&&t.value==='None'){this.adv();return new N('NONE',t.value,t.line,t.column);}if(t.type==='IDENTIFIER'){this.adv();return new N('ID',t.value,t.line,t.column);}if(t.type==='KEYWORD'&&(t.value==='print'||t.value==='input')){this.adv();return new N('ID',t.value,t.line,t.column);}if(this.match('DELIMITER','(')){this.adv();const e=this.pE();this.expect('DELIMITER',')');if(e){const g=new N('GROUP',null,t.line,t.column);g.add(e);return g;}return null;}if(this.match('DELIMITER','[')){this.adv();const n=new N('LIST',null,t.line,t.column);if(!this.match('DELIMITER',']')){let el=this.pE();if(el)n.add(el);while(this.match('DELIMITER',',')){this.adv();if(this.match('DELIMITER',']'))break;el=this.pE();if(el)n.add(el);}}this.expect('DELIMITER',']');return n;}return null;}
+}
+
+/* ═══════════════════════════════════════
+   TAC GENERATOR
+   ═══════════════════════════════════════ */
+class TAC{
+constructor(){this.code=[];this.tc=0;this.lc=0;}
+nT(){return`t${this.tc++}`;}nL(){return`L${this.lc++}`;}
+emit(l,ty){this.code.push({text:l,type:ty||'op'});}
+generate(ast){for(const ch of ast.children)this.vS(ch);return this.code;}
+vS(n){if(!n)return;switch(n.type){case'PREPROCESSOR':this.emit(`; ${n.value}`,'comment');break;case'FUNC_DEF':this.vFunc(n);break;case'VAR_DECL':this.vVD(n);break;case'EXPR_STMT':this.vE(n.children[0]);break;case'RETURN':this.vRet(n);break;case'IF':this.vIf(n);break;case'ELIF':this.vElif(n);break;case'WHILE':this.vWh(n);break;case'DO_WHILE':this.vDoWh(n);break;case'FOR':this.vFor(n);break;case'SWITCH':this.vSw(n);break;case'BLOCK':for(const c2 of n.children)this.vS(c2);break;case'BREAK':this.emit('goto _break','goto');break;case'CONTINUE':this.emit('goto _continue','goto');break;default:for(const c2 of n.children)this.vS(c2);}}
+vFunc(n){const name=n.value||'anon';this.emit('','blank');this.emit(`func_begin ${name}:`,'label');const params=n.children.find(c2=>c2.type==='PARAMETERS');if(params)for(const p of params.children){const nm2=p.value||(p.children.find(c2=>c2.type==='NAME')||{}).value;if(nm2)this.emit(`param ${nm2}`,'param');}const block=n.children.find(c2=>c2.type==='BLOCK');if(block)for(const c2 of block.children)this.vS(c2);this.emit(`func_end ${name}`,'label');}
+vVD(n){for(const v of n.children){if(v.type!=='VARIABLE')continue;const init=v.children.find(c2=>c2.type==='INITIALIZER');if(init&&init.children[0]){const val=this.vE(init.children[0]);this.emit(`${v.value} = ${val}`,'assign');}else this.emit(`${v.value} = 0`,'assign');}}
+vRet(n){if(n.children.length){const v=this.vE(n.children[0]);this.emit(`return ${v}`,'return');}else this.emit('return','return');}
+vIf(n){const cn=n.children.find(c2=>c2.type==='CONDITION'),bb=n.children.find(c2=>c2.type==='BLOCK'||c2.type==='BODY'),el=n.children.find(c2=>c2.type==='ELSE'),eif=n.children.find(c2=>c2.type==='ELSE_IF');const lT=this.nL(),lF=this.nL(),lE=this.nL();if(cn&&cn.children[0]){const cv=this.vE(cn.children[0]);this.emit(`if ${cv} goto ${lT}`,'goto');this.emit(`goto ${lF}`,'goto');}this.emit(`${lT}:`,'label');if(bb)this.vS(bb);if(el||eif)this.emit(`goto ${lE}`,'goto');this.emit(`${lF}:`,'label');if(eif)this.vS(eif.children[0]);else if(el)for(const c2 of el.children)this.vS(c2);if(el||eif)this.emit(`${lE}:`,'label');}
+vElif(n){const cn=n.children.find(c2=>c2.type==='CONDITION'),bn=n.children.find(c2=>c2.type==='BODY');const lT=this.nL(),lE=this.nL();if(cn&&cn.children[0]){const cv=this.vE(cn.children[0]);this.emit(`if ${cv} goto ${lT}`,'goto');this.emit(`goto ${lE}`,'goto');}this.emit(`${lT}:`,'label');if(bn)this.vS(bn);this.emit(`${lE}:`,'label');}
+vWh(n){const cn=n.children.find(c2=>c2.type==='CONDITION'),bn=n.children.find(c2=>c2.type==='BLOCK'||c2.type==='BODY');const lS=this.nL(),lB=this.nL(),lE=this.nL();this.emit(`${lS}:`,'label');if(cn&&cn.children[0]){const cv=this.vE(cn.children[0]);this.emit(`if ${cv} goto ${lB}`,'goto');this.emit(`goto ${lE}`,'goto');}this.emit(`${lB}:`,'label');if(bn)this.vS(bn);this.emit(`goto ${lS}`,'goto');this.emit(`${lE}:`,'label');}
+vDoWh(n){const cn=n.children.find(c2=>c2.type==='CONDITION'),bn=n.children.find(c2=>c2.type==='BLOCK');const lS=this.nL();this.emit(`${lS}:`,'label');if(bn)this.vS(bn);if(cn&&cn.children[0]){const cv=this.vE(cn.children[0]);this.emit(`if ${cv} goto ${lS}`,'goto');}}
+vFor(n){const initN=n.children.find(c2=>c2.type==='INIT'),condN=n.children.find(c2=>c2.type==='CONDITION'),updN=n.children.find(c2=>c2.type==='UPDATE'),bodyN=n.children.find(c2=>c2.type==='BLOCK'||c2.type==='BODY'),iterN=n.children.find(c2=>c2.type==='ITERATOR'),itblN=n.children.find(c2=>c2.type==='ITERABLE');if(iterN){const itV=itblN&&itblN.children[0]?this.vE(itblN.children[0]):'?';const lS=this.nL(),lB=this.nL(),lE=this.nL(),idx=this.nT();this.emit(`${idx} = 0`,'assign');this.emit(`${lS}:`,'label');const len=this.nT();this.emit(`${len} = len(${itV})`,'assign');const cnd=this.nT();this.emit(`${cnd} = ${idx} < ${len}`,'assign');this.emit(`if ${cnd} goto ${lB}`,'goto');this.emit(`goto ${lE}`,'goto');this.emit(`${lB}:`,'label');this.emit(`${iterN.value} = ${itV}[${idx}]`,'assign');if(bodyN)this.vS(bodyN);this.emit(`${idx} = ${idx} + 1`,'assign');this.emit(`goto ${lS}`,'goto');this.emit(`${lE}:`,'label');}else{if(initN)for(const c2 of initN.children)this.vS(c2);const lS=this.nL(),lB=this.nL(),lE=this.nL();this.emit(`${lS}:`,'label');if(condN&&condN.children[0]){const cv=this.vE(condN.children[0]);this.emit(`if ${cv} goto ${lB}`,'goto');this.emit(`goto ${lE}`,'goto');}this.emit(`${lB}:`,'label');if(bodyN)this.vS(bodyN);if(updN&&updN.children[0])this.vE(updN.children[0]);this.emit(`goto ${lS}`,'goto');this.emit(`${lE}:`,'label');}}
+vSw(n){const exN=n.children.find(c2=>c2.type==='SWITCH_EXPR');const sv=exN&&exN.children[0]?this.vE(exN.children[0]):'?';const lE=this.nL();const cases=n.children.filter(c2=>c2.type==='CASE'||c2.type==='DEFAULT'),labels=cases.map(()=>this.nL());cases.forEach((cs,i)=>{if(cs.type==='CASE'&&cs.children[0]){const cv=this.vE(cs.children[0]);const t2=this.nT();this.emit(`${t2} = ${sv} == ${cv}`,'assign');this.emit(`if ${t2} goto ${labels[i]}`,'goto');}});const di=cases.findIndex(c2=>c2.type==='DEFAULT');if(di>=0)this.emit(`goto ${labels[di]}`,'goto');else this.emit(`goto ${lE}`,'goto');cases.forEach((cs,i)=>{this.emit(`${labels[i]}:`,'label');const stmts=cs.children.filter(c2=>!['INT','ID','STRING','FLOAT'].includes(c2.type));for(const s of stmts)this.vS(s);});this.emit(`${lE}:`,'label');}
+vE(n){if(!n)return'?';switch(n.type){case'INT':case'FLOAT':case'STRING':case'BOOL':case'NONE':return n.value;case'ID':return n.value;case'ASSIGN':{const lhs=n.children[0]?this.vE(n.children[0]):'?',rhs=n.children[1]?this.vE(n.children[1]):'?';if(n.value==='=')this.emit(`${lhs} = ${rhs}`,'assign');else{const t2=this.nT(),op=n.value.replace('=','');this.emit(`${t2} = ${lhs} ${op} ${rhs}`,'assign');this.emit(`${lhs} = ${t2}`,'assign');}return lhs;}case'BIN_OP':case'RELATIONAL':case'EQUALITY':case'LOG_AND':case'LOG_OR':{const l=this.vE(n.children[0]),r=this.vE(n.children[1]),t2=this.nT();this.emit(`${t2} = ${l} ${n.value} ${r}`,'assign');return t2;}case'UNARY':{const o=this.vE(n.children[0]),t2=this.nT();this.emit(`${t2} = ${n.value}${o}`,'assign');return t2;}case'PREFIX':{const o=this.vE(n.children[0]),t2=this.nT();this.emit(`${t2} = ${o} ${n.value==='++'?'+':'-'} 1`,'assign');this.emit(`${o} = ${t2}`,'assign');return t2;}case'POSTFIX':{const o=this.vE(n.children[0]),t2=this.nT(),t3=this.nT();this.emit(`${t2} = ${o}`,'assign');this.emit(`${t3} = ${o} ${n.value==='++'?'+':'-'} 1`,'assign');this.emit(`${o} = ${t3}`,'assign');return t2;}case'CALL':{const fn=n.children[0]?this.vE(n.children[0]):'?',argsN=n.children[1],av=[];if(argsN)for(const a2 of argsN.children)av.push(this.vE(a2));for(const v of av)this.emit(`push_arg ${v}`,'param');const t2=this.nT();this.emit(`${t2} = call ${fn}, ${av.length}`,'call');return t2;}case'INDEX':{const obj=this.vE(n.children[0]),idx=n.children[1]?this.vE(n.children[1]):'?',t2=this.nT();this.emit(`${t2} = ${obj}[${idx}]`,'assign');return t2;}case'DOT':{const obj=this.vE(n.children[0]),mem=n.children[1]?n.children[1].value:'?',t2=this.nT();this.emit(`${t2} = ${obj}.${mem}`,'assign');return t2;}case'ARROW':{const obj=this.vE(n.children[0]),mem=n.children[1]?n.children[1].value:'?',t2=this.nT();this.emit(`${t2} = ${obj}->${mem}`,'assign');return t2;}case'GROUP':return this.vE(n.children[0]);case'TERNARY':{const cv=this.vE(n.children[0]),lT=this.nL(),lF=this.nL(),lE=this.nL(),t2=this.nT();this.emit(`if ${cv} goto ${lT}`,'goto');this.emit(`goto ${lF}`,'goto');this.emit(`${lT}:`,'label');const tv=this.vE(n.children[1]);this.emit(`${t2} = ${tv}`,'assign');this.emit(`goto ${lE}`,'goto');this.emit(`${lF}:`,'label');const fv=this.vE(n.children[2]);this.emit(`${t2} = ${fv}`,'assign');this.emit(`${lE}:`,'label');return t2;}case'LIST':{const t2=this.nT(),elems=n.children.map(c2=>this.vE(c2));this.emit(`${t2} = [${elems.join(', ')}]`,'assign');return t2;}case'SIZEOF':{const inner=n.children[0]?this.vE(n.children[0]):'?',t2=this.nT();this.emit(`${t2} = sizeof(${inner})`,'assign');return t2;}default:if(n.children.length){let last='?';for(const c2 of n.children)last=this.vE(c2);return last;}return n.value||'?';}}
+}
+
+/* ═══════════════════════════════════════
+   TARGET CODE GENERATOR (x86-like ASM)
+   ═══════════════════════════════════════ */
+class AsmGenerator{
+constructor(){this.asm=[];this.regs=['EAX','EBX','ECX','EDX','ESI','EDI','R8D','R9D'];this.regMap={};this.nextReg=0;this.spillCount=0;this.instrCounts={};this.strLiterals=[];this.strIdx=0;}
+getReg(v){if(this.regMap[v])return this.regMap[v];if(this.nextReg<this.regs.length){const r=this.regs[this.nextReg++];this.regMap[v]=r;return r;}this.spillCount++;const spill=`[rbp-${this.spillCount*8}]`;this.regMap[v]=spill;return spill;}
+e(line,ty){ty=ty||'instr';this.asm.push({text:line,type:ty});this.instrCounts[ty]=(this.instrCounts[ty]||0)+1;}
+isNum(s){return/^-?\d+(\.\d+)?$/.test(s);}
+isStr(s){return/^["']/.test(s);}
+generate(tacCode){
+  this.e('; ════════════════════════════════════════','comment');
+  this.e(';  Target Assembly Code (x86-64 style)','comment');
+  this.e('; ════════════════════════════════════════','comment');
+  this.e('','blank');
+  // Collect string literals
+  for(const l of tacCode){if(l.type==='assign'||l.type==='param'){const sm=l.text.match(/"[^"]*"|'[^']*'/g);if(sm)for(const s of sm){if(!this.strLiterals.find(x=>x.val===s)){this.strLiterals.push({label:`_str${this.strIdx++}`,val:s});}}}}
+  if(this.strLiterals.length){this.e('section .data','directive');for(const s of this.strLiterals)this.e(`  ${s.label}: db ${s.val}, 0`,'directive');this.e('','blank');}
+  this.e('section .text','directive');this.e('  global _start','directive');this.e('','blank');
+  for(const l of tacCode){
+    if(l.type==='blank'){this.e('','blank');continue;}
+    if(l.type==='comment'){this.e(`; ${l.text.replace(/^;\s*/,'')}`,'comment');continue;}
+    if(l.type==='label'){
+      const m=l.text.match(/^func_begin\s+(\w+):$/);
+      if(m){this.e(`${m[1]}:`,'label');this.e('  push rbp','instr');this.e('  mov rbp, rsp','instr');this.e(`  sub rsp, 128           ; reserve stack`,'instr');continue;}
+      const m2=l.text.match(/^func_end\s+(\w+)$/);
+      if(m2){this.e(`  leave`,'instr');this.e(`  ret`,'instr');this.e('','blank');continue;}
+      this.e(`${l.text}`,'label');continue;
+    }
+    if(l.type==='param'){
+      const m=l.text.match(/^param\s+(.+)$/);
+      if(m){this.e(`  ; param ${m[1]}`,'comment');continue;}
+      const m2=l.text.match(/^push_arg\s+(.+)$/);
+      if(m2){const v=m2[1];if(this.isStr(v)){const sl=this.strLiterals.find(s=>s.val===v);if(sl){this.e(`  lea rdi, [${sl.label}]`,'instr');this.e(`  push rdi`,'instr');}else{this.e(`  push ${v}`,'instr');}}else if(this.isNum(v)){this.e(`  push ${v}`,'instr');}else{const r=this.getReg(v);this.e(`  push ${r}`,'instr');}continue;}
+    }
+    if(l.type==='call'){
+      const m=l.text.match(/^(\S+)\s*=\s*call\s+(\S+),\s*(\d+)$/);
+      if(m){const[,dest,fn,argc]=m;this.e(`  call ${fn}`,'instr');if(parseInt(argc)>0)this.e(`  add rsp, ${parseInt(argc)*8}    ; clean args`,'instr');const dr=this.getReg(dest);this.e(`  mov ${dr}, EAX          ; return val`,'instr');continue;}
+    }
+    if(l.type==='return'){
+      const m=l.text.match(/^return\s+(.+)$/);
+      if(m){const v=m[1];if(this.isNum(v)){this.e(`  mov EAX, ${v}`,'instr');}else{const r=this.getReg(v);this.e(`  mov EAX, ${r}`,'instr');}this.e(`  leave`,'instr');this.e(`  ret`,'instr');continue;}
+      this.e(`  xor EAX, EAX`,'instr');this.e(`  leave`,'instr');this.e(`  ret`,'instr');continue;
+    }
+    if(l.type==='goto'){
+      const m=l.text.match(/^if\s+(\S+)\s+goto\s+(\S+)$/);
+      if(m){const r=this.getReg(m[1]);this.e(`  cmp ${r}, 0`,'instr');this.e(`  jne ${m[2]}`,'instr');continue;}
+      const m2=l.text.match(/^goto\s+(\S+)$/);
+      if(m2){this.e(`  jmp ${m2[1]}`,'instr');continue;}
+    }
+    if(l.type==='assign'){
+      // a = b op c
+      const m3=l.text.match(/^(\S+)\s*=\s*(\S+)\s*([+\-*\/%]|==|!=|<|>|<=|>=|&&|\|\||<<|>>)\s*(\S+)$/);
+      if(m3){const[,dest,a,op,b]=m3;const dr=this.getReg(dest);const opMap={'+':'add','-':'sub','*':'imul','/':'idiv','%':'idiv','<<':'shl','>>':'shr','==':'cmp','!=':'cmp','<':'cmp','>':'cmp','<=':'cmp','>=':'cmp','&&':'and','||':'or'};
+        if(this.isNum(a)){this.e(`  mov ${dr}, ${a}`,'instr');}else{const ar=this.getReg(a);if(ar!==dr)this.e(`  mov ${dr}, ${ar}`,'instr');}
+        const bOp=this.isNum(b)?b:this.getReg(b);
+        if(op==='*'){this.e(`  imul ${dr}, ${bOp}`,'instr');}
+        else if(op==='/'){this.e(`  push EDX`,'instr');this.e(`  mov EAX, ${dr}`,'instr');this.e(`  cdq`,'instr');if(this.isNum(b)){const tr=this.getReg('__div_tmp');this.e(`  mov ${tr}, ${b}`,'instr');this.e(`  idiv ${tr}`,'instr');}else{this.e(`  idiv ${bOp}`,'instr');}this.e(`  mov ${dr}, EAX`,'instr');this.e(`  pop EDX`,'instr');}
+        else if(op==='%'){this.e(`  push EDX`,'instr');this.e(`  mov EAX, ${dr}`,'instr');this.e(`  cdq`,'instr');if(this.isNum(b)){const tr=this.getReg('__mod_tmp');this.e(`  mov ${tr}, ${b}`,'instr');this.e(`  idiv ${tr}`,'instr');}else{this.e(`  idiv ${bOp}`,'instr');}this.e(`  mov ${dr}, EDX`,'instr');this.e(`  pop EDX`,'instr');}
+        else if(['==','!=','<','>','<=','>='].includes(op)){this.e(`  cmp ${dr}, ${bOp}`,'instr');const setMap={'==':'sete','!=':'setne','<':'setl','>':'setg','<=':'setle','>=':'setge'};this.e(`  ${setMap[op]} al`,'instr');this.e(`  movzx ${dr}, al`,'instr');}
+        else{const inst=opMap[op]||'add';this.e(`  ${inst} ${dr}, ${bOp}`,'instr');}
+        continue;
+      }
+      // a = unary b  (e.g., t0 = -x)
+      const m4=l.text.match(/^(\S+)\s*=\s*(-|!|~|not)(\S+)$/);
+      if(m4){const[,dest,op,operand]=m4;const dr=this.getReg(dest);if(this.isNum(operand))this.e(`  mov ${dr}, ${operand}`,'instr');else{const or2=this.getReg(operand);this.e(`  mov ${dr}, ${or2}`,'instr');}if(op==='-')this.e(`  neg ${dr}`,'instr');else if(op==='!'||op==='not'){this.e(`  cmp ${dr}, 0`,'instr');this.e(`  sete al`,'instr');this.e(`  movzx ${dr}, al`,'instr');}else if(op==='~')this.e(`  not ${dr}`,'instr');continue;}
+      // a = b  (simple assignment)
+      const m5=l.text.match(/^(\S+)\s*=\s*(.+)$/);
+      if(m5){const[,dest,src]=m5;const dr=this.getReg(dest);const trimSrc=src.trim();if(this.isNum(trimSrc)){this.e(`  mov ${dr}, ${trimSrc}`,'instr');}else if(this.isStr(trimSrc)){const sl=this.strLiterals.find(s=>s.val===trimSrc);if(sl)this.e(`  lea ${dr}, [${sl.label}]`,'instr');else this.e(`  mov ${dr}, ${trimSrc}`,'instr');}else if(trimSrc.includes('call ')){this.e(`  ; ${l.text}`,'comment');}else if(trimSrc.includes('[')){// array access
+        this.e(`  ; ${l.text}`,'comment');const sr=this.getReg(trimSrc.replace(/\[.*\]/,'').trim());this.e(`  mov ${dr}, ${sr}`,'instr');}else{const sr=this.getReg(trimSrc);this.e(`  mov ${dr}, ${sr}`,'instr');}continue;}
+    }
+    this.e(`  ; ${l.text}`,'comment');
+  }
+  return{asm:this.asm,regMap:this.regMap,instrCounts:this.instrCounts,strLiterals:this.strLiterals};
+}
+}
+
+/* ═══════════════════════════════════════
+   RENDERING
+   ═══════════════════════════════════════ */
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function renderTokens(tokens){const tbody=document.getElementById('token-tbody'),summary=document.getElementById('token-summary');tbody.innerHTML='';summary.innerHTML='';const f=tokens.filter(t=>t.type!=='NEWLINE'&&t.type!=='COMMENT');if(!f.length){tbody.innerHTML='<tr><td colspan="5" class="empty">No tokens.</td></tr>';return;}const counts={};f.forEach(t=>counts[t.type]=(counts[t.type]||0)+1);Object.entries(counts).sort().forEach(([type,cnt])=>{const s=document.createElement('span');s.className='badge '+type;s.textContent=`${type}: ${cnt}`;summary.appendChild(s);});f.forEach((t,i)=>{const tr=document.createElement('tr');tr.innerHTML=`<td style="color:var(--muted)">${i+1}</td><td><span class="badge ${t.type}" style="font-size:11px">${esc(t.type)}</span></td><td class="val">${esc(t.value)}</td><td>${t.line}</td><td>${t.column}</td>`;tbody.appendChild(tr);});}
+function renderAST(node,container){container.innerHTML='';function build(n,indent,isLast,prefix,parent){const div=document.createElement('div');div.className='ast-node';const conn=indent>0?(isLast?'└── ':'├── '):'';const np=prefix+(indent>0?(isLast?'    ':'│   '):'');const val=n.value?` : <span class="ast-value">${esc(String(n.value))}</span>`:'';const loc=n.line>0?`  <span class="ast-loc">[Ln ${n.line}]</span>`:'';const hasC=n.children.length>0;const arrow=hasC?'<span class="ast-arrow" style="color:#475569;margin-right:2px">▼</span>':'';div.innerHTML=`<span class="ast-connector">${esc(prefix)}${esc(conn)}</span>${arrow}<span class="ast-type">${esc(n.type)}</span>${val}${loc}`;parent.appendChild(div);if(hasC){div.classList.add('ast-toggle');const cc=document.createElement('div');parent.appendChild(cc);n.children.forEach((ch,i)=>build(ch,indent+1,i===n.children.length-1,np,cc));div.addEventListener('click',function(ev){ev.stopPropagation();const ar=this.querySelector('.ast-arrow');if(cc.style.display==='none'){cc.style.display='';if(ar)ar.textContent='▼';}else{cc.style.display='none';if(ar)ar.textContent='▶';}});}}build(node,0,true,'',container);}
+function hlTac(text){let h=esc(text);h=h.replace(/^(L\d+:|func_begin\s+\w+:|func_end\s+\w+)/,`<span style="color:#c084fc">$1</span>`);h=h.replace(/\b(goto)\b/g,`<span style="color:#f472b6">$1</span>`);h=h.replace(/\b(if)\b/g,`<span style="color:#f472b6">$1</span>`);h=h.replace(/\b(call)\b/g,`<span style="color:#6ee7b7">$1</span>`);h=h.replace(/\b(return)\b/g,`<span style="color:#fb923c">$1</span>`);h=h.replace(/\b(param|push_arg)\b/g,`<span style="color:#a5b4fc">$1</span>`);h=h.replace(/(;.*)/g,`<span style="color:#475569;font-style:italic">$1</span>`);h=h.replace(/\b(t\d+)\b/g,`<span style="color:#6ee7b7">$1</span>`);return h;}
+function renderTAC(code,container){container.innerHTML='';if(!code.length){container.innerHTML='<div class="empty" style="padding:40px">No TAC.</div>';return;}let n=0;code.forEach(l=>{if(l.type==='blank'){const d=document.createElement('div');d.className='tac-line';d.innerHTML='<div class="tac-num"></div><div class="tac-code">&nbsp;</div>';container.appendChild(d);return;}n++;const d=document.createElement('div');d.className='tac-line';d.innerHTML=`<div class="tac-num">${n}</div><div class="tac-code">${hlTac(l.text)}</div>`;container.appendChild(d);});}
+function hlAsm(text){let h=esc(text);h=h.replace(/(;.*)/g,`<span style="color:#475569;font-style:italic">$1</span>`);h=h.replace(/\b(mov|lea|add|sub|imul|idiv|push|pop|call|ret|jmp|jne|je|jl|jg|jle|jge|cmp|xor|and|or|not|neg|shl|shr|cdq|leave|sete|setne|setl|setg|setle|setge|movzx|global)\b/g,`<span style="color:#38bdf8;font-weight:700">$1</span>`);h=h.replace(/\b(EAX|EBX|ECX|EDX|ESI|EDI|R8D|R9D|rsp|rbp|rdi|rsi|al|eax)\b/g,`<span style="color:#fbbf24">$1</span>`);h=h.replace(/\b(section)\b/g,`<span style="color:#c084fc;font-weight:700">$1</span>`);h=h.replace(/\b(\.data|\.text|\.bss)\b/g,`<span style="color:#c084fc">$1</span>`);h=h.replace(/^(\w+:)/gm,`<span style="color:#6ee7b7;font-weight:700">$1</span>`);h=h.replace(/\b(_str\d+)\b/g,`<span style="color:#fb923c">$1</span>`);h=h.replace(/\b(db)\b/g,`<span style="color:#f472b6">$1</span>`);return h;}
+function renderAsm(asmResult,container){container.innerHTML='';const code=asmResult.asm;if(!code.length){container.innerHTML='<div class="empty" style="padding:40px">No assembly.</div>';return;}let n=0;code.forEach(l=>{if(l.type==='blank'){const d=document.createElement('div');d.className='asm-line';d.innerHTML='<div class="asm-num"></div><div class="asm-code">&nbsp;</div>';container.appendChild(d);return;}n++;const d=document.createElement('div');d.className='asm-line';d.innerHTML=`<div class="asm-num">${n}</div><div class="asm-code">${hlAsm(l.text)}</div>`;container.appendChild(d);});}
+function renderSummary(ast,parseErrors,tacLen,asmResult,tokenCount){const stats=document.getElementById('summary-stats'),regTbody=document.getElementById('reg-tbody'),instrTbody=document.getElementById('instr-tbody');const total=ast.count();const asmLines=asmResult.asm.filter(l=>l.type==='instr').length;const regsUsed=Object.keys(asmResult.regMap).length;const ok=parseErrors.length===0;stats.innerHTML=`<div class="stat-card"><div class="stat-value" style="color:${ok?'#6ee7b7':'#f87171'}">${ok?'PASS':'FAIL'}</div><div class="stat-label">Parse</div></div><div class="stat-card"><div class="stat-value">${tokenCount}</div><div class="stat-label">Tokens</div></div><div class="stat-card"><div class="stat-value">${total}</div><div class="stat-label">AST Nodes</div></div><div class="stat-card"><div class="stat-value">${tacLen}</div><div class="stat-label">TAC Lines</div></div><div class="stat-card"><div class="stat-value" style="color:#6ee7b7">${asmLines}</div><div class="stat-label">ASM Instructions</div></div><div class="stat-card"><div class="stat-value">${regsUsed}</div><div class="stat-label">Registers Used</div></div><div class="stat-card"><div class="stat-value">${asmResult.strLiterals.length}</div><div class="stat-label">String Literals</div></div>`;regTbody.innerHTML='';const rm=asmResult.regMap;if(!Object.keys(rm).length){regTbody.innerHTML='<tr><td colspan="2" class="empty">No registers allocated.</td></tr>';}else{Object.entries(rm).sort(([,a],[,b])=>a.localeCompare(b)).forEach(([v,r])=>{const tr=document.createElement('tr');tr.innerHTML=`<td class="val">${esc(v)}</td><td><span style="color:#fbbf24;font-weight:700">${esc(r)}</span></td>`;regTbody.appendChild(tr);});}instrTbody.innerHTML='';const ic=asmResult.instrCounts;if(!Object.keys(ic).length){instrTbody.innerHTML='<tr><td colspan="2" class="empty">No instructions.</td></tr>';}else{Object.entries(ic).sort().forEach(([ty,cnt])=>{const tr=document.createElement('tr');tr.innerHTML=`<td class="val">${esc(ty)}</td><td>${cnt}</td>`;instrTbody.appendChild(tr);});}}
+
+/* TABS */
+document.querySelectorAll('.tab').forEach(tab=>{tab.addEventListener('click',()=>{document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));tab.classList.add('active');const target=tab.dataset.tab;['tokens','ast','tac','asm','summary'].forEach(p=>{document.getElementById('panel-'+p).classList.toggle('hidden',p!==target);});});});
+
+/* EVENTS */
+document.getElementById('run').addEventListener('click',()=>{
+  const code=document.getElementById('code').value,status=document.getElementById('status');status.textContent='Generating…';
+  try{const tokens=tokenize(code);const parser=new Parser(tokens);const ast=parser.parse();const tacGen=new TAC();tacGen.generate(ast);const asmGen=new AsmGenerator();const asmResult=asmGen.generate(tacGen.code);const filtered=tokens.filter(t=>t.type!=='NEWLINE'&&t.type!=='COMMENT');const tacLines=tacGen.code.filter(c2=>c2.type!=='blank'&&c2.type!=='comment').length;const asmLines=asmResult.asm.filter(l=>l.type==='instr').length;renderTokens(tokens);renderAST(ast,document.getElementById('ast-container'));renderTAC(tacGen.code,document.getElementById('tac-container'));renderAsm(asmResult,document.getElementById('asm-container'));renderSummary(ast,parser.errors,tacLines,asmResult,filtered.length);status.textContent=`Done — ${filtered.length} tokens, ${tacLines} TAC, ${asmLines} ASM instructions, ${Object.keys(asmResult.regMap).length} registers`;
+  }catch(e){status.textContent='Error: '+e.message;console.error(e);}});
+
+document.getElementById('clear').addEventListener('click',()=>{document.getElementById('code').value='';document.getElementById('status').textContent='Ready';document.getElementById('token-summary').innerHTML='';document.getElementById('token-tbody').innerHTML='<tr><td colspan="5" class="empty">Click <strong>Generate</strong> to begin.</td></tr>';document.getElementById('ast-container').innerHTML='<div class="empty">Click <strong>Generate</strong> to build the AST.</div>';document.getElementById('tac-container').innerHTML='<div class="empty" style="padding:40px">Click <strong>Generate</strong> to produce TAC.</div>';document.getElementById('asm-container').innerHTML='<div class="empty" style="padding:40px">Click <strong>Generate</strong> to produce target assembly.</div>';document.getElementById('summary-stats').innerHTML='';document.getElementById('reg-tbody').innerHTML='<tr><td colspan="2" class="empty">No data yet.</td></tr>';document.getElementById('instr-tbody').innerHTML='<tr><td colspan="2" class="empty">No data yet.</td></tr>';});
+
+document.getElementById('demo-c').addEventListener('click',()=>{document.getElementById('code').value=`#include <stdio.h>
+
+int main() {
+    int x = 10;
+    float pi = 3.14;
+    int y = x + 5 * 2;
+
+    if (x >= 5 && pi != 0) {
+        printf("hello");
+        x++;
+    } else {
+        y = x - 1;
+    }
+
+    for (int i = 0; i < 10; i++) {
+        y = y + i;
+    }
+
+    while (x > 0) {
+        x--;
+    }
+
+    switch (y) {
+        case 1:
+            x = 100;
+            break;
+        case 2:
+            x = 200;
+            break;
+        default:
+            x = 0;
+    }
+
+    return 0;
+}`;document.getElementById('run').click();});
+
+document.getElementById('demo-py').addEventListener('click',()=>{document.getElementById('code').value=`# Python code generation demo
+def greet(name="World"):
+    print("Hello, " + name)
+
+def compute(a, b):
+    x = a + b
+    y = x * 2
+    z = y - a
+
+    if x > 10:
+        print("big")
+    elif x > 5:
+        print("medium")
+    else:
+        print("small")
+
+    for i in range(10):
+        z = z + i
+
+    while y > 0:
+        y = y - 1
+
+    return z
+
+class Calculator:
+    def add(self, a, b):
+        return a + b
+
+    def multiply(self, a, b):
+        return a * b
+
+result = compute(3, 7)
+val = result * 2 + 1
+arr = [1, 2, 3, 4, 5]
+total = arr[0] + arr[1]`;document.getElementById('run').click();});
+</script>
+</body>
+</html>
